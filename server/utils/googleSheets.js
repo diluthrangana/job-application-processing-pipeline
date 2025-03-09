@@ -1,18 +1,19 @@
-// server/utils/googleSheets.js
 const { google } = require('googleapis');
-const path = require('path');
 
-// Initialize Google Sheets client
+// Initialize Google Sheets client using credentials from environment variables
 const authenticateGoogleSheets = async () => {
   try {
-    const auth = new google.auth.GoogleAuth({
-      keyFile: path.join(__dirname, '../config/google-service-account.json'),
-      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-    });
+    // Parse the credentials from environment variable
+    const credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_CREDENTIALS);
     
-    const client = await auth.getClient();
-    const sheets = google.sheets({ version: 'v4', auth: client });
+    const auth = new google.auth.JWT(
+      credentials.client_email,
+      null,
+      credentials.private_key,
+      ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
+    );
     
+    const sheets = google.sheets({ version: 'v4', auth });
     return sheets;
   } catch (error) {
     console.error('Error authenticating with Google Sheets:', error);
@@ -25,6 +26,10 @@ exports.addApplicationToSheet = async (applicationData) => {
   try {
     const sheets = await authenticateGoogleSheets();
     const spreadsheetId = process.env.GOOGLE_SHEET_ID;
+    
+    if (!spreadsheetId) {
+      throw new Error('GOOGLE_SHEET_ID environment variable is not set');
+    }
     
     // Format data for sheet
     const rowData = [
@@ -61,6 +66,10 @@ exports.addApplicationToSheet = async (applicationData) => {
 exports.createSheet = async () => {
   try {
     const sheets = await authenticateGoogleSheets();
+    const drive = google.drive({ 
+      version: 'v3', 
+      auth: sheets.context._options.auth 
+    });
     
     // Create a new spreadsheet
     const response = await sheets.spreadsheets.create({
@@ -95,7 +104,8 @@ exports.createSheet = async () => {
     });
     
     // Make the sheet public (anyone with the link can view)
-    await sheets.permissions.create({
+    // Using Drive API for permission management
+    await drive.permissions.create({
       fileId: spreadsheetId,
       resource: {
         role: 'reader',
