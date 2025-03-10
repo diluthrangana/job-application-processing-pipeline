@@ -1,7 +1,9 @@
+
+// server/utils/cvParser.js
 const pdfParse = require('pdf-parse');
 const mammoth = require('mammoth');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
-// Function to extract data from CV
 exports.extractDataFromCV = async (fileBuffer, fileExtension) => {
   try {
     let textContent = '';
@@ -17,14 +19,17 @@ exports.extractDataFromCV = async (fileBuffer, fileExtension) => {
       throw new Error('Unsupported file format');
     }
     
-    // Extract sections from the text content
-    const sections = extractSections(textContent);
+    // Extract personal info using regex (keeping this from original code)
+    const personalInfo = extractPersonalInfo(textContent);
+    
+    // Use Gemini API to extract structured data
+    const structuredData = await extractStructuredDataWithGemini(textContent);
     
     return {
-      personal_info: sections.personalInfo,
-      education: sections.education,
-      qualifications: sections.qualifications,
-      projects: sections.projects
+      personal_info: { ...personalInfo, ...structuredData.personal_info },
+      education: structuredData.education,
+      qualifications: structuredData.qualifications,
+      projects: structuredData.projects
     };
   } catch (error) {
     console.error('Error parsing CV:', error);
@@ -32,68 +37,99 @@ exports.extractDataFromCV = async (fileBuffer, fileExtension) => {
   }
 };
 
-// Function to extract sections from text content
-const extractSections = (text) => {
-  const result = {
-    personalInfo: {},
-    education: '',
-    qualifications: '',
-    projects: ''
-  };
-
-  // Extract name, email, and phone
+// Function to extract personal info using regex
+const extractPersonalInfo = (text) => {
+  const personalInfo = {};
+  
+  // Extract name (assuming it's at the beginning of the CV)
   const nameMatch = text.match(/^([A-Za-z\s]+)/);
   if (nameMatch && nameMatch[1]) {
-    result.personalInfo.name = nameMatch[1].trim();
+    personalInfo.name = nameMatch[1].trim();
   }
+  
+  // Extract email
   const emailMatch = text.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/);
   if (emailMatch && emailMatch[1]) {
-    result.personalInfo.email = emailMatch[1].trim();
+    personalInfo.email = emailMatch[1].trim();
   }
+  
+  // Extract phone number
   const phoneMatch = text.match(/(\+?[0-9\s\-()]{10,})/);
   if (phoneMatch && phoneMatch[1]) {
-    result.personalInfo.phone = phoneMatch[1].trim();
+    personalInfo.phone = phoneMatch[1].trim();
   }
-
-  // Define section keywords
-  const sectionKeywords = {
-    education: ['education', 'academic background', 'academic qualifications'],
-    qualifications: ['qualifications', 'skills', 'certifications'],
-    projects: ['projects', 'experience', 'work experience']
-  };
   
-  // Split text into lines
-  const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+  return personalInfo;
+};
 
-  let currentSection = null;
-  let sectionContent = '';
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    const lowerLine = line.toLowerCase();
-
-    // Check for section titles
-    for (const [section, keywords] of Object.entries(sectionKeywords)) {
-      if (keywords.some(keyword => lowerLine.includes(keyword))) {
-        if (currentSection) {
-          result[currentSection] = sectionContent.trim();
-        }
-        currentSection = section;
-        sectionContent = '';
-        continue;
+// Function to extract structured data using Gemini API
+const extractStructuredDataWithGemini = async (textContent) => {
+  try {
+    // Initialize the API with the key from environment variables
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    
+    // Use the latest model name - gemini-1.5-pro
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
+    
+    const prompt = `
+    Parse the following CV text and extract structured information in JSON format.
+    Extract the following sections:
+    1. Personal Information (name, contact details if present)
+    2. Education (list of institutions, degrees, years)
+    3. Qualifications/Skills (list of skills, certifications, etc.)
+    4. Projects (list of projects with name, description, and technologies used)
+    
+    Return the data in the following JSON structure:
+    {
+      "personal_info": { },
+      "education": [ { "institution": "", "degree": "", "year": "" }, ... ],
+      "qualifications": [ { "name": "", "details": "" }, ... ],
+      "projects": [ { "name": "", "description": "", "technologies": "" }, ... ]
+    }
+    
+    CV Text:
+    ${textContent}
+    `;
+    
+    // Generate content with proper error handling
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const responseText = response.text();
+    
+    // Extract JSON from the response - handle multiple formats
+    const jsonMatch = responseText.match(/```json\n([\s\S]*?)\n```/) || 
+                      responseText.match(/{[\s\S]*}/);
+                      
+    let parsedData;
+    if (jsonMatch) {
+      const jsonString = jsonMatch[1] || jsonMatch[0];
+      try {
+        parsedData = JSON.parse(jsonString);
+      } catch (jsonError) {
+        console.error('Error parsing JSON from response:', jsonError);
+        console.log('Raw response text:', responseText);
+        console.log('Extracted JSON string:', jsonString);
+        throw new Error('Failed to parse JSON from Gemini response');
       }
+    } else {
+      console.error('No JSON pattern found in Gemini response:', responseText);
+      throw new Error('Failed to extract structured data from Gemini response');
     }
-
-    // Append line to the current section
-    if (currentSection) {
-      sectionContent += line + ' ';
-    }
+    
+    return {
+      personal_info: parsedData.personal_info || {},
+      education: parsedData.education || [],
+      qualifications: parsedData.qualifications || [],
+      projects: parsedData.projects || []
+    };
+  } catch (error) {
+    console.error('Error using Gemini API:', error);
+    // Fallback to basic extraction if Gemini fails
+    return {
+      personal_info: {},
+      education: [],
+      qualifications: [],
+      projects: []
+    };
   }
-
-  // Add last processed section
-  if (currentSection) {
-    result[currentSection] = sectionContent.trim();
-  }
-  
-  return result;
 };
