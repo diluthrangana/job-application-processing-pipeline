@@ -1,5 +1,3 @@
-
-// server/utils/cvParser.js
 const pdfParse = require('pdf-parse');
 const mammoth = require('mammoth');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
@@ -8,7 +6,6 @@ exports.extractDataFromCV = async (fileBuffer, fileExtension) => {
   try {
     let textContent = '';
     
-    // Extract text based on file type
     if (fileExtension.toLowerCase() === '.pdf') {
       const pdfData = await pdfParse(fileBuffer);
       textContent = pdfData.text;
@@ -19,10 +16,8 @@ exports.extractDataFromCV = async (fileBuffer, fileExtension) => {
       throw new Error('Unsupported file format');
     }
     
-    // Extract personal info using regex (keeping this from original code)
     const personalInfo = extractPersonalInfo(textContent);
     
-    // Use Gemini API to extract structured data
     const structuredData = await extractStructuredDataWithGemini(textContent);
     
     return {
@@ -37,23 +32,19 @@ exports.extractDataFromCV = async (fileBuffer, fileExtension) => {
   }
 };
 
-// Function to extract personal info using regex
 const extractPersonalInfo = (text) => {
   const personalInfo = {};
   
-  // Extract name (assuming it's at the beginning of the CV)
   const nameMatch = text.match(/^([A-Za-z\s]+)/);
   if (nameMatch && nameMatch[1]) {
     personalInfo.name = nameMatch[1].trim();
   }
   
-  // Extract email
   const emailMatch = text.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/);
   if (emailMatch && emailMatch[1]) {
     personalInfo.email = emailMatch[1].trim();
   }
   
-  // Extract phone number
   const phoneMatch = text.match(/(\+?[0-9\s\-()]{10,})/);
   if (phoneMatch && phoneMatch[1]) {
     personalInfo.phone = phoneMatch[1].trim();
@@ -62,13 +53,9 @@ const extractPersonalInfo = (text) => {
   return personalInfo;
 };
 
-// Function to extract structured data using Gemini API
 const extractStructuredDataWithGemini = async (textContent) => {
   try {
-    // Initialize the API with the key from environment variables
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    
-    // Use the latest model name - gemini-1.5-pro
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
     
     const prompt = `
@@ -91,12 +78,10 @@ const extractStructuredDataWithGemini = async (textContent) => {
     ${textContent}
     `;
     
-    // Generate content with proper error handling
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const responseText = response.text();
     
-    // Extract JSON from the response - handle multiple formats
     const jsonMatch = responseText.match(/```json\n([\s\S]*?)\n```/) || 
                       responseText.match(/{[\s\S]*}/);
                       
@@ -124,7 +109,6 @@ const extractStructuredDataWithGemini = async (textContent) => {
     };
   } catch (error) {
     console.error('Error using Gemini API:', error);
-    // Fallback to basic extraction if Gemini fails
     return {
       personal_info: {},
       education: [],

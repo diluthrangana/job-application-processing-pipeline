@@ -1,4 +1,3 @@
-// client/src/components/SuccessPage.js
 import React from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import './SuccessPage.css';

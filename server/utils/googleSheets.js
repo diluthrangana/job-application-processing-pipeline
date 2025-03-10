@@ -1,12 +1,9 @@
 const { google } = require('googleapis');
 
-// Initialize Google Sheets client
 const authenticateGoogleSheets = async () => {
   try {
-    // Parse credentials from environment variable
     const credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_CREDENTIALS);
     
-    // Create auth client using the parsed credentials
     const auth = new google.auth.JWT(
       credentials.client_email,
       null,
@@ -23,20 +20,17 @@ const authenticateGoogleSheets = async () => {
   }
 };
 
-// Function to format array data into readable string
 const formatArrayData = (arr, keyFields) => {
   if (!arr || arr.length === 0) return '';
   
   return arr.map(item => {
     if (typeof item === 'object') {
-      // Extract specified keys from object
       return keyFields.map(key => item[key] || '').filter(val => val).join(': ');
     }
     return item;
   }).join(' | ');
 };
 
-// Format qualifications specifically
 const formatQualifications = (qualifications) => {
   if (!qualifications || qualifications.length === 0) return '';
   
@@ -48,36 +42,28 @@ const formatQualifications = (qualifications) => {
   }).join(' | ');
 };
 
-// Combined function to handle all Google Sheets operations
 exports.storeApplicationData = async (applicationData) => {
   try {
     const sheets = await authenticateGoogleSheets();
     let spreadsheetId = process.env.GOOGLE_SHEET_ID;
    
-    // Check if spreadsheet exists, create if it doesn't
     if (!spreadsheetId) {
       spreadsheetId = await createApplicationSheet(sheets);
-      // Store the spreadsheet ID for future use
       console.log(`New spreadsheet created with ID: ${spreadsheetId}`);
-      // In a production app, you would save this ID to environment variables or a config file
     }
    
-    // Format education data
     const educationFormatted = formatArrayData(
       applicationData.education, 
       ['institution', 'degree', 'year']
     );
     
-    // Format qualifications data
     const qualificationsFormatted = formatQualifications(applicationData.qualifications);
     
-    // Format projects data
     const projectsFormatted = formatArrayData(
       applicationData.projects, 
       ['name', 'description', 'technologies']
     );
    
-    // Format data for sheet
     const rowData = [
       applicationData.personal_info.name || '',
       applicationData.personal_info.email || '',
@@ -90,7 +76,6 @@ exports.storeApplicationData = async (applicationData) => {
       applicationData.status || 'submitted'
     ];
    
-    // Append data to sheet
     await sheets.spreadsheets.values.append({
       spreadsheetId,
       range: 'Sheet1!A:I',
@@ -114,10 +99,8 @@ exports.storeApplicationData = async (applicationData) => {
   }
 };
 
-// Helper function to create a new application sheet
 const createApplicationSheet = async (sheets) => {
   try {
-    // Create a new spreadsheet
     const response = await sheets.spreadsheets.create({
       resource: {
         properties: {
@@ -139,7 +122,6 @@ const createApplicationSheet = async (sheets) => {
    
     const spreadsheetId = response.data.spreadsheetId;
    
-    // Add headers to the sheet
     await sheets.spreadsheets.values.update({
       spreadsheetId,
       range: 'Sheet1!A1:I1',
@@ -149,7 +131,6 @@ const createApplicationSheet = async (sheets) => {
       }
     });
    
-    // Make the sheet public (anyone with the link can view)
     const auth = sheets.context._options.auth;
     const drive = google.drive({ version: 'v3', auth });
     await drive.permissions.create({

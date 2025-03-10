@@ -1,4 +1,3 @@
-// server/controllers/applicationController.js
 const { bucket } = require('../config/firebase');
 const { extractDataFromCV } = require('../utils/cvParser');
 const { storeApplicationData } = require('../utils/googleSheets');
@@ -9,7 +8,6 @@ const path = require('path');
 
 exports.submitApplication = async (req, res) => {
   try {
-    // Extract form data
     const { name, email, phone } = req.body;
     const cvFile = req.file;
     
@@ -17,12 +15,10 @@ exports.submitApplication = async (req, res) => {
       return res.status(400).json({ error: 'CV file is required' });
     }
     
-    // Generate unique filename
     const fileExtension = path.extname(cvFile.originalname);
     const fileName = `${uuidv4()}${fileExtension}`;
     const filePath = `cvs/${fileName}`;
     
-    // Upload file to Firebase Storage
     const file = bucket.file(filePath);
     const fileStream = file.createWriteStream({
       metadata: {
@@ -37,16 +33,12 @@ exports.submitApplication = async (req, res) => {
     
     fileStream.on('finish', async () => {
       try {
-        // Make the file publicly accessible
         await file.makePublic();
         
-        // Get public URL
         const publicUrl = `https://storage.googleapis.com/${bucket.name}/${filePath}`;
         
-        // Process and extract data from CV using Gemini API
         const cvData = await extractDataFromCV(cvFile.buffer, fileExtension);
         
-        // Prepare application data
         const applicationData = {
           personal_info: {
             name: name || cvData.personal_info.name,
@@ -62,10 +54,8 @@ exports.submitApplication = async (req, res) => {
           processed_at: new Date().toISOString()
         };
         
-        // Store data directly in Google Sheets (skipping Firebase DB)
         const sheetResult = await storeApplicationData(applicationData);
         
-        // Send webhook with the processed data
         const webhookPayload = {
           cv_data: {
             personal_info: applicationData.personal_info,
@@ -77,7 +67,7 @@ exports.submitApplication = async (req, res) => {
           metadata: {
             applicant_name: applicationData.personal_info.name,
             email: applicationData.personal_info.email,
-            status: "testing", // Change to "testing" during testing
+            status: "testing",
             cv_processed: true,
             processed_timestamp: new Date().toISOString(),
             google_sheet_url: sheetResult.publicUrl
@@ -86,7 +76,6 @@ exports.submitApplication = async (req, res) => {
         
         await sendWebhook(webhookPayload);
         
-        // Schedule follow-up email for the next day based on timezone
         await scheduleFollowUpEmail(applicationData.personal_info.email, applicationData.personal_info.name);
         
         return res.status(201).json({
@@ -99,7 +88,6 @@ exports.submitApplication = async (req, res) => {
       }
     });
     
-    // Write the file buffer to the stream
     fileStream.end(cvFile.buffer);
   } catch (error) {
     console.error('Error submitting application:', error);

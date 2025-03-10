@@ -1,17 +1,14 @@
-// server/routes/applications.js
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const applicationController = require('../controllers/applicationController');
 
-// Configure multer for file uploads
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB max file size
+    fileSize: 10 * 1024 * 1024,
   },
   fileFilter: (req, file, cb) => {
-    // Accept only PDF and DOCX files
     if (
       file.mimetype === 'application/pdf' ||
       file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
@@ -23,7 +20,6 @@ const upload = multer({
   },
 });
 
-// Submit application route
 router.post('/submit', upload.single('cv'), applicationController.submitApplication);
 
 module.exports = router;

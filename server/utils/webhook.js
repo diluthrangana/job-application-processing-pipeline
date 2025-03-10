@@ -5,7 +5,6 @@ exports.sendWebhook = async (payload) => {
   try {
     const webhookUrl = 'https://rnd-assignment.automations-3d6.workers.dev/';
     
-    // Replace with your actual email used for the Metana application
     const candidateEmail = process.env.CANDIDATE_EMAIL || 'your-email@example.com';
     
     const response = await axios.post(webhookUrl, payload, {
