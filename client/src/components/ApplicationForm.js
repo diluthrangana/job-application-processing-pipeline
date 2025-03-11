@@ -116,7 +116,7 @@ const ApplicationForm = () => {
         <h1>Job Application</h1>
         
         <div className="hosting-notice">
-          <p>⚠️ Please note: This form is hosted on a free server. Submission may take some time while the server wakes up from sleep mode. Please be patient after clicking submit.</p>
+          <p>⚠️ Please note: This form is hosted on a free server. Submission may take some time while the server wakes up from sleep mode. If the submission doesn't work, click https://job-application-processing-pipeline-3.onrender.com/ to wake up the server and try again.</p>
         </div>
 
         {errors.submit && (
