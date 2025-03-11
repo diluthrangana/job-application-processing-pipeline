@@ -91,7 +91,7 @@ const ApplicationForm = () => {
       data.append('phone', formData.phone);
       data.append('cv', formData.cv);
 
-      const response = await axios.post('https://job-application-processing-pipeline-3.onrender.com/api/applications/submit', data, {
+      const response = await axios.post('http://localhost:5000/api/applications/submit', data, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
