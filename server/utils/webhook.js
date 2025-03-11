@@ -1,4 +1,3 @@
-// server/utils/webhook.js
 const axios = require('axios');
 
 exports.sendWebhook = async (payload) => {

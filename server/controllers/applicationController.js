@@ -67,7 +67,7 @@ exports.submitApplication = async (req, res) => {
           metadata: {
             applicant_name: applicationData.personal_info.name,
             email: applicationData.personal_info.email,
-            status: "testing",
+            status: "prod",
             cv_processed: true,
             processed_timestamp: new Date().toISOString(),
             google_sheet_url: sheetResult.publicUrl
