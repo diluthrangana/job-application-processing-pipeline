@@ -123,7 +123,7 @@ const ApplicationForm = () => {
               href="https://job-application-processing-pipeline-3.onrender.com/" 
               target="_blank" 
               rel="noopener noreferrer"
-              style={{ textDecoration: 'none' }}
+              style={{ textDecoration: 'none', fontWeight: 'bold' }}
             > here </a>  
             to wake up the server and try again.
           </p>
