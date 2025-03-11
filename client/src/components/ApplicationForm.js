@@ -114,6 +114,10 @@ const ApplicationForm = () => {
     <div className="form-container">
       <div className="form-card">
         <h1>Job Application</h1>
+        
+        <div className="hosting-notice">
+          <p>⚠️ Please note: This form is hosted on a free server. Submission may take some time while the server wakes up from sleep mode. Please be patient after clicking submit.</p>
+        </div>
 
         {errors.submit && (
           <div className="error-message">{errors.submit}</div>
@@ -173,7 +177,7 @@ const ApplicationForm = () => {
           </div>
 
           <button type="submit" className="submit-button" disabled={loading}>
-            {loading ? 'Submitting...' : 'Submit Application'}
+            {loading ? 'Submitting... (This may take a moment)' : 'Submit Application'}
           </button>
         </form>
       </div>
