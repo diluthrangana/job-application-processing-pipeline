@@ -117,9 +117,9 @@ const ApplicationForm = () => {
         
         <div className="hosting-notice">
           <p>
-            ⚠️ Please note: This form is hosted on a free server. Submission may take some time while the server wakes up from sleep mode. 
-            If the submission doesn't work, click 
-            <a href="https://job-application-processing-pipeline-3.onrender.com/" target="_blank" rel="noopener noreferrer">  here  </a> 
+            ⚠️ Note: This form is hosted on a free server. Submission may take some time while the server wakes up from sleep mode. 
+            If the submission doesn't work, click  
+            <a href="https://job-application-processing-pipeline-3.onrender.com/" target="_blank" rel="noopener noreferrer">here</a>  
             to wake up the server and try again.
           </p>
         </div>
