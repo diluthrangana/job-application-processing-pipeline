@@ -5,7 +5,7 @@ exports.sendWebhook = async (payload) => {
   try {
     const webhookUrl = 'https://rnd-assignment.automations-3d6.workers.dev/';
     
-    const candidateEmail = process.env.CANDIDATE_EMAIL || 'your-email@example.com';
+    const candidateEmail = 'diluthrangana@gmail.com';
     
     const response = await axios.post(webhookUrl, payload, {
       headers: {
