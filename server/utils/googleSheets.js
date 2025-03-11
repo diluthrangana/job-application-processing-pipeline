@@ -50,6 +50,8 @@ exports.storeApplicationData = async (applicationData) => {
     if (!spreadsheetId) {
       spreadsheetId = await createApplicationSheet(sheets);
       console.log(`New spreadsheet created with ID: ${spreadsheetId}`);
+    } else {
+      await ensureHeadersExist(sheets, spreadsheetId);
     }
    
     const educationFormatted = formatArrayData(
@@ -95,6 +97,36 @@ exports.storeApplicationData = async (applicationData) => {
     };
   } catch (error) {
     console.error('Error storing data in Google Sheets:', error);
+    throw error;
+  }
+};
+
+
+const ensureHeadersExist = async (sheets, spreadsheetId) => {
+  try {
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: 'Sheet1!A1:I1',
+    });
+    
+    const headers = response.data.values;
+    
+    if (!headers || headers.length === 0) {
+      console.log('Headers not found. Adding headers to the sheet...');
+      await sheets.spreadsheets.values.update({
+        spreadsheetId,
+        range: 'Sheet1!A1:I1',
+        valueInputOption: 'RAW',
+        resource: {
+          values: [['Name', 'Email', 'Phone', 'Education', 'Qualifications', 'Projects', 'CV Link', 'Submission Time', 'Status']]
+        }
+      });
+      console.log('Headers added successfully');
+    } else {
+      console.log('Headers already exist in the sheet');
+    }
+  } catch (error) {
+    console.error('Error checking or adding headers:', error);
     throw error;
   }
 };

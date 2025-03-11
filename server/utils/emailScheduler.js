@@ -37,7 +37,9 @@ exports.sendFollowUpEmail = async (to, name, immediate = false) => {
     
     const info = await transporter.sendMail(mailOptions);
     console.log('Follow-up email sent:', info.messageId);
-    console.log('Email preview URL:', nodemailer.getTestMessageUrl(info));
+    if (info.messageId) {
+      console.log('Email sent successfully with ID:', info.messageId);
+    }
     return true;
   } catch (error) {
     console.error('Error sending follow-up email:', error);
@@ -52,17 +54,35 @@ exports.scheduleFollowUpEmail = async (email, name) => {
       throw new Error('Email and name are required');
     }
     
-    const timezone = 'UTC';
+    const timezone = 'Asia/Colombo';
     
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     tomorrow.setHours(10, 0, 0, 0);
     
-    const job = schedule.scheduleJob(tomorrow, async () => {
+    const rule = new schedule.RecurrenceRule();
+    rule.year = tomorrow.getFullYear();
+    rule.month = tomorrow.getMonth();
+    rule.date = tomorrow.getDate();
+    rule.hour = 10;
+    rule.minute = 0;
+    rule.tz = timezone;
+    
+    const job = schedule.scheduleJob(rule, async () => {
       await exports.sendFollowUpEmail(email, name);
     });
     
-    console.log(`Follow-up email scheduled for ${tomorrow.toISOString()} (${timezone})`);
+    const sriLankaTime = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZoneName: 'short'
+    }).format(tomorrow);
+    
+    console.log(`Follow-up email scheduled for tomorrow at 10 AM Sri Lanka time: ${sriLankaTime}`);
     console.log(`Job scheduled for: ${email}`);
     
     global.scheduledJobs = global.scheduledJobs || {};
@@ -77,10 +97,47 @@ exports.scheduleFollowUpEmail = async (email, name) => {
 
 exports.testEmail = async (email, name) => {
   try {
-    console.log(`Sending test email to ${email}`);
-    return await exports.sendFollowUpEmail(email, name, true);
+    console.log(`Scheduling test email to ${email} to be sent in 30 minutes (Sri Lanka time)`);
+    
+    const timezone = 'Asia/Colombo';
+    
+    const thirtyMinutesFromNow = new Date();
+    thirtyMinutesFromNow.setMinutes(thirtyMinutesFromNow.getMinutes() + 30);
+    
+    const rule = new schedule.RecurrenceRule();
+    rule.year = thirtyMinutesFromNow.getFullYear();
+    rule.month = thirtyMinutesFromNow.getMonth();
+    rule.date = thirtyMinutesFromNow.getDate();
+    rule.hour = thirtyMinutesFromNow.getHours();
+    rule.minute = thirtyMinutesFromNow.getMinutes();
+    rule.tz = timezone;
+    
+    const job = schedule.scheduleJob(rule, async () => {
+      await exports.sendFollowUpEmail(email, name);
+    });
+    
+    const scheduledTime = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZoneName: 'short'
+    }).format(thirtyMinutesFromNow);
+    
+    console.log(`Test email scheduled for: ${scheduledTime}`);
+    console.log(`Test job scheduled for: ${email}`);
+    
+    global.scheduledJobs = global.scheduledJobs || {};
+    global.scheduledJobs[`test_${email}`] = job;
+    
+    console.log("Sending immediate confirmation email...");
+    await exports.sendFollowUpEmail(email, name, true);
+    
+    return true;
   } catch (error) {
-    console.error('Test email failed:', error);
+    console.error('Test email scheduling failed:', error);
     throw error;
   }
 };
