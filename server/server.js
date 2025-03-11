@@ -7,7 +7,7 @@ const PORT = process.env.PORT || 5000;
 
 // Configure CORS to specifically allow requests from your frontend
 const corsOptions = {
-  origin: 'https://job-application-processing-pipeline.onrender.com',
+  origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true,
   optionsSuccessStatus: 200
