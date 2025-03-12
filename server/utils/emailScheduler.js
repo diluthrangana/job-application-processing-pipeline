@@ -56,14 +56,14 @@ exports.scheduleFollowUpEmail = async (email, name) => {
     
     const timezone = 'Asia/Colombo';
     
-    // Create a date object for today at 12:15 PM Sri Lanka time
+    // Create a date object for today at 1:10 PM Sri Lanka time
     const today = new Date();
-    today.setHours(12, 15, 0, 0);
+    today.setHours(13, 10, 0, 0);
     
-    // If current time is already past 12:15 PM, schedule for immediate sending
+    // If current time is already past 1:10 PM, schedule for immediate sending
     const now = new Date();
-    if (now.getHours() > 12 || (now.getHours() === 12 && now.getMinutes() >= 15)) {
-      console.log('Current time is past 12:15 PM, scheduling immediate email instead');
+    if (now.getHours() > 13 || (now.getHours() === 13 && now.getMinutes() >= 10)) {
+      console.log('Current time is past 1:10 PM, scheduling immediate email instead');
       await exports.sendFollowUpEmail(email, name, true);
       return true;
     }
@@ -72,8 +72,8 @@ exports.scheduleFollowUpEmail = async (email, name) => {
     rule.year = today.getFullYear();
     rule.month = today.getMonth();
     rule.date = today.getDate();
-    rule.hour = 12;
-    rule.minute = 15;
+    rule.hour = 13;
+    rule.minute = 10;
     rule.tz = timezone;
     
     const job = schedule.scheduleJob(rule, async () => {
@@ -90,7 +90,7 @@ exports.scheduleFollowUpEmail = async (email, name) => {
       timeZoneName: 'short'
     }).format(today);
     
-    console.log(`Follow-up email scheduled for today at 12:15 PM Sri Lanka time: ${sriLankaTime}`);
+    console.log(`Follow-up email scheduled for today at 1:10 PM Sri Lanka time: ${sriLankaTime}`);
     console.log(`Job scheduled for: ${email}`);
     
     global.scheduledJobs = global.scheduledJobs || {};
