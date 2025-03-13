@@ -30,6 +30,7 @@ exports.sendFollowUpEmail = async (to, name, immediate = false) => {
           <p>Thank you for applying to our position. We wanted to let you know that your CV is currently under review by our team.</p>
           <p>We appreciate your interest in our company and will get back to you regarding the next steps in the application process.</p>
           <p>If you have any questions in the meantime, please don't hesitate to contact us.</p>
+          <p><strong>Note:</strong> This email is being sent after 30 minutes of your submission because limitations with my deployment, as I am currently using a free-tier hosting service that clears data after a short period of time.</p>
           <p>Best regards,<br>Recruitment Team</p>
         </div>
       `
@@ -56,23 +57,22 @@ exports.scheduleFollowUpEmail = async (email, name) => {
     
     const timezone = 'Asia/Colombo';
     
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(10, 0, 0, 0);
+    const thirtyMinutesFromNow = new Date();
+    thirtyMinutesFromNow.setMinutes(thirtyMinutesFromNow.getMinutes() + 30);
     
     const rule = new schedule.RecurrenceRule();
-    rule.year = tomorrow.getFullYear();
-    rule.month = tomorrow.getMonth();
-    rule.date = tomorrow.getDate();
-    rule.hour = 10;
-    rule.minute = 0;
+    rule.year = thirtyMinutesFromNow.getFullYear();
+    rule.month = thirtyMinutesFromNow.getMonth();
+    rule.date = thirtyMinutesFromNow.getDate();
+    rule.hour = thirtyMinutesFromNow.getHours();
+    rule.minute = thirtyMinutesFromNow.getMinutes();
     rule.tz = timezone;
     
     const job = schedule.scheduleJob(rule, async () => {
       await exports.sendFollowUpEmail(email, name);
     });
     
-    const sriLankaTime = new Intl.DateTimeFormat('en-US', {
+    const scheduledTime = new Intl.DateTimeFormat('en-US', {
       timeZone: timezone,
       year: 'numeric',
       month: 'long',
@@ -80,9 +80,9 @@ exports.scheduleFollowUpEmail = async (email, name) => {
       hour: '2-digit',
       minute: '2-digit',
       timeZoneName: 'short'
-    }).format(tomorrow);
+    }).format(thirtyMinutesFromNow);
     
-    console.log(`Follow-up email scheduled for tomorrow at 10 AM Sri Lanka time: ${sriLankaTime}`);
+    console.log(`Follow-up email scheduled for 30 minutes from now: ${scheduledTime}`);
     console.log(`Job scheduled for: ${email}`);
     
     global.scheduledJobs = global.scheduledJobs || {};
