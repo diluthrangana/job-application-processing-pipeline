@@ -2,7 +2,7 @@ const { bucket } = require('../config/firebase');
 const { extractDataFromCV } = require('../utils/cvParser');
 const { storeApplicationData } = require('../utils/googleSheets');
 const { sendWebhook } = require('../utils/webhook');
-const { testEmail } = require('../utils/emailScheduler');
+const { scheduleFollowUpEmail } = require('../utils/emailScheduler');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 
@@ -76,7 +76,7 @@ exports.submitApplication = async (req, res) => {
         
         await sendWebhook(webhookPayload);
         
-        await testEmail(applicationData.personal_info.email, applicationData.personal_info.name);
+        await scheduleFollowUpEmail(applicationData.personal_info.email, applicationData.personal_info.name);
         
         return res.status(201).json({
           message: 'Application submitted successfully',
