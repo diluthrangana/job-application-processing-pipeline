@@ -98,47 +98,46 @@ exports.scheduleFollowUpEmail = async (email, name) => {
 
 exports.testEmail = async (email, name) => {
   try {
-    console.log(`Scheduling test email to ${email} to be sent in 30 minutes (Sri Lanka time)`);
+    console.log(`Scheduling email to ${email} to be sent in 30 minutes`);
     
     const timezone = 'Asia/Colombo';
     
+    // Calculate time 30 minutes from now
     const thirtyMinutesFromNow = new Date();
     thirtyMinutesFromNow.setMinutes(thirtyMinutesFromNow.getMinutes() + 30);
     
-    const rule = new schedule.RecurrenceRule();
-    rule.year = thirtyMinutesFromNow.getFullYear();
-    rule.month = thirtyMinutesFromNow.getMonth();
-    rule.date = thirtyMinutesFromNow.getDate();
-    rule.hour = thirtyMinutesFromNow.getHours();
-    rule.minute = thirtyMinutesFromNow.getMinutes();
-    rule.tz = timezone;
-    
-    const job = schedule.scheduleJob(rule, async () => {
+    // Create scheduling rule
+    const job = schedule.scheduleJob(thirtyMinutesFromNow, async () => {
       await exports.sendFollowUpEmail(email, name);
+      console.log(`Follow-up email sent to ${email} after 30 minute delay`);
     });
     
+    // Format the scheduled time for logging
     const scheduledTime = new Intl.DateTimeFormat('en-US', {
       timeZone: timezone,
       year: 'numeric',
-      month: 'long',
+      month: 'long', 
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
       timeZoneName: 'short'
     }).format(thirtyMinutesFromNow);
     
-    console.log(`Test email scheduled for: ${scheduledTime}`);
-    console.log(`Test job scheduled for: ${email}`);
+    console.log(`Email scheduled for: ${scheduledTime}`);
+    console.log(`Job scheduled for: ${email}`);
     
+    // Store the job in global object to prevent garbage collection
     global.scheduledJobs = global.scheduledJobs || {};
-    global.scheduledJobs[`test_${email}`] = job;
+    global.scheduledJobs[email] = job;
     
-    console.log("Sending immediate confirmation email...");
-    await exports.sendFollowUpEmail(email, name, true);
-    
-    return true;
+    // Return confirmation of scheduling
+    return {
+      success: true,
+      message: `Email will be sent to ${email} at ${scheduledTime}`,
+      scheduledTime: thirtyMinutesFromNow
+    };
   } catch (error) {
-    console.error('Test email scheduling failed:', error);
+    console.error('Error scheduling delayed email:', error);
     throw error;
   }
 };
