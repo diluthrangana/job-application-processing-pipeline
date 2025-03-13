@@ -1,10 +1,6 @@
-const Queue = require('bull');
 const nodemailer = require('nodemailer');
+const schedule = require('node-schedule');
 
-// Create a new queue with Redis connection
-const emailQueue = new Queue('email-queue', process.env.REDIS_URL || 'redis://127.0.0.1:6379');
-
-// Helper function to create transporter
 const createTransporter = () => {
   return nodemailer.createTransport({
     service: 'gmail',
@@ -18,8 +14,7 @@ const createTransporter = () => {
   });
 };
 
-// Function to send the actual email
-const sendFollowUpEmail = async (to, name) => {
+exports.sendFollowUpEmail = async (to, name, immediate = false) => {
   try {
     const transporter = createTransporter();
     await transporter.verify();
@@ -53,7 +48,6 @@ const sendFollowUpEmail = async (to, name) => {
   }
 };
 
-// Schedule an email for same day at 1:00 PM
 exports.scheduleFollowUpEmail = async (email, name) => {
   try {
     if (!email || !name) {
@@ -62,21 +56,66 @@ exports.scheduleFollowUpEmail = async (email, name) => {
     
     const timezone = 'Asia/Colombo';
     
-    // Create a date object for today at 1:00 PM
-    const today = new Date();
-    today.setHours(13, 0, 0, 0); // Set to 1:00 PM (13:00)
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(10, 0, 0, 0);
     
-    // Check if 1:00 PM has already passed today
-    const now = new Date();
-    if (now > today) {
-      console.log('1:00 PM has already passed for today. Scheduling for tomorrow.');
-      today.setDate(today.getDate() + 1); // Schedule for tomorrow if 1:00 PM today has passed
-    }
+    const rule = new schedule.RecurrenceRule();
+    rule.year = tomorrow.getFullYear();
+    rule.month = tomorrow.getMonth();
+    rule.date = tomorrow.getDate();
+    rule.hour = 10;
+    rule.minute = 0;
+    rule.tz = timezone;
     
-    // Calculate delay in milliseconds
-    const delay = today.getTime() - now.getTime();
+    const job = schedule.scheduleJob(rule, async () => {
+      await exports.sendFollowUpEmail(email, name);
+    });
     
-    // Format scheduled time for logging
+    const sriLankaTime = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZoneName: 'short'
+    }).format(tomorrow);
+    
+    console.log(`Follow-up email scheduled for tomorrow at 10 AM Sri Lanka time: ${sriLankaTime}`);
+    console.log(`Job scheduled for: ${email}`);
+    
+    global.scheduledJobs = global.scheduledJobs || {};
+    global.scheduledJobs[email] = job;
+    
+    return true;
+  } catch (error) {
+    console.error('Error scheduling follow-up email:', error);
+    throw error;
+  }
+};
+
+exports.testEmail = async (email, name) => {
+  try {
+    console.log(`Scheduling test email to ${email} to be sent in 30 minutes (Sri Lanka time)`);
+    
+    const timezone = 'Asia/Colombo';
+    
+    const thirtyMinutesFromNow = new Date();
+    thirtyMinutesFromNow.setMinutes(thirtyMinutesFromNow.getMinutes() + 30);
+    
+    const rule = new schedule.RecurrenceRule();
+    rule.year = thirtyMinutesFromNow.getFullYear();
+    rule.month = thirtyMinutesFromNow.getMonth();
+    rule.date = thirtyMinutesFromNow.getDate();
+    rule.hour = thirtyMinutesFromNow.getHours();
+    rule.minute = thirtyMinutesFromNow.getMinutes();
+    rule.tz = timezone;
+    
+    const job = schedule.scheduleJob(rule, async () => {
+      await exports.sendFollowUpEmail(email, name);
+    });
+    
     const scheduledTime = new Intl.DateTimeFormat('en-US', {
       timeZone: timezone,
       year: 'numeric',
@@ -85,62 +124,20 @@ exports.scheduleFollowUpEmail = async (email, name) => {
       hour: '2-digit',
       minute: '2-digit',
       timeZoneName: 'short'
-    }).format(today);
+    }).format(thirtyMinutesFromNow);
     
-    // Add job to queue with delay
-    const job = await emailQueue.add(
-      {
-        email,
-        name,
-        scheduledFor: today.toISOString()
-      },
-      {
-        delay,
-        attempts: 3,
-        backoff: {
-          type: 'exponential',
-          delay: 60000 // 1 minute initial delay, then exponential
-        },
-        removeOnComplete: false, // Keep completed jobs for history
-        removeOnFail: false // Keep failed jobs for debugging
-      }
-    );
+    console.log(`Test email scheduled for: ${scheduledTime}`);
+    console.log(`Test job scheduled for: ${email}`);
     
-    console.log(`Email scheduled with job ID ${job.id} for ${email} at ${scheduledTime}`);
-    return { jobId: job.id, scheduledTime };
+    global.scheduledJobs = global.scheduledJobs || {};
+    global.scheduledJobs[`test_${email}`] = job;
+    
+    console.log("Sending immediate confirmation email...");
+    await exports.sendFollowUpEmail(email, name, true);
+    
+    return true;
   } catch (error) {
-    console.error('Error scheduling email:', error);
+    console.error('Test email scheduling failed:', error);
     throw error;
   }
 };
-
-// Process the queue
-emailQueue.process(async (job) => {
-  console.log(`Processing job ${job.id} for ${job.data.email}`);
-  const { email, name } = job.data;
-  await sendFollowUpEmail(email, name);
-  console.log(`Job ${job.id} completed: Email sent to ${email}`);
-  return { success: true };
-});
-
-// Event handlers for monitoring
-emailQueue.on('completed', (job, result) => {
-  console.log(`Job ${job.id} completed successfully`);
-});
-
-emailQueue.on('failed', (job, error) => {
-  console.error(`Job ${job.id} failed for ${job.data.email}:`, error);
-});
-
-emailQueue.on('error', (error) => {
-  console.error('Queue error:', error);
-});
-
-// Setup function to be called when your application starts
-exports.setupQueue = () => {
-  console.log('Email queue initialized');
-  return emailQueue;
-};
-
-// Export the sendFollowUpEmail function for direct use
-exports.sendFollowUpEmail = sendFollowUpEmail;
