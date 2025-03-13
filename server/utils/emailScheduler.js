@@ -102,17 +102,14 @@ exports.testEmail = async (email, name) => {
     
     const timezone = 'Asia/Colombo';
     
-    // Calculate time 30 minutes from now
     const thirtyMinutesFromNow = new Date();
     thirtyMinutesFromNow.setMinutes(thirtyMinutesFromNow.getMinutes() + 30);
     
-    // Create scheduling rule
     const job = schedule.scheduleJob(thirtyMinutesFromNow, async () => {
       await exports.sendFollowUpEmail(email, name);
       console.log(`Follow-up email sent to ${email} after 30 minute delay`);
     });
     
-    // Format the scheduled time for logging
     const scheduledTime = new Intl.DateTimeFormat('en-US', {
       timeZone: timezone,
       year: 'numeric',
@@ -126,11 +123,9 @@ exports.testEmail = async (email, name) => {
     console.log(`Email scheduled for: ${scheduledTime}`);
     console.log(`Job scheduled for: ${email}`);
     
-    // Store the job in global object to prevent garbage collection
     global.scheduledJobs = global.scheduledJobs || {};
     global.scheduledJobs[email] = job;
     
-    // Return confirmation of scheduling
     return {
       success: true,
       message: `Email will be sent to ${email} at ${scheduledTime}`,
