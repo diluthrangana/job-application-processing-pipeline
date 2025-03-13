@@ -56,16 +56,23 @@ exports.scheduleFollowUpEmail = async (email, name) => {
     
     const timezone = 'Asia/Colombo';
     
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(10, 0, 0, 0);
+    // Create a date object for today at 12:05 PM
+    const today = new Date();
+    today.setHours(12, 5, 0, 0);
+    
+    // Check if 12:05 PM has already passed today
+    const now = new Date();
+    if (now > today) {
+      console.log('12:05 PM has already passed for today. Scheduling for tomorrow.');
+      today.setDate(today.getDate() + 1); // Schedule for tomorrow if 12:05 PM today has passed
+    }
     
     const rule = new schedule.RecurrenceRule();
-    rule.year = tomorrow.getFullYear();
-    rule.month = tomorrow.getMonth();
-    rule.date = tomorrow.getDate();
-    rule.hour = 10;
-    rule.minute = 0;
+    rule.year = today.getFullYear();
+    rule.month = today.getMonth();
+    rule.date = today.getDate();
+    rule.hour = 12;
+    rule.minute = 5;
     rule.tz = timezone;
     
     const job = schedule.scheduleJob(rule, async () => {
@@ -80,9 +87,9 @@ exports.scheduleFollowUpEmail = async (email, name) => {
       hour: '2-digit',
       minute: '2-digit',
       timeZoneName: 'short'
-    }).format(tomorrow);
+    }).format(today);
     
-    console.log(`Follow-up email scheduled for tomorrow at 10 AM Sri Lanka time: ${sriLankaTime}`);
+    console.log(`Follow-up email scheduled for today at 12:05 PM Sri Lanka time: ${sriLankaTime}`);
     console.log(`Job scheduled for: ${email}`);
     
     global.scheduledJobs = global.scheduledJobs || {};
