@@ -6,10 +6,6 @@ const { scheduleFollowUpEmail } = require('../utils/emailScheduler');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 
-// Initialize the email queue when the application starts
-// Add this line to your index.js or app.js
-// require('./utils/emailScheduler').setupQueue();
-
 exports.submitApplication = async (req, res) => {
   try {
     const { name, email, phone } = req.body;
@@ -80,18 +76,11 @@ exports.submitApplication = async (req, res) => {
         
         await sendWebhook(webhookPayload);
         
-        // Schedule follow-up email for 1:00 PM
-        const scheduleResult = await scheduleFollowUpEmail(
-          applicationData.personal_info.email, 
-          applicationData.personal_info.name
-        );
-        
-        console.log(`Follow-up email scheduled for ${applicationData.personal_info.name} at ${scheduleResult.scheduledTime}`);
+        await scheduleFollowUpEmail(applicationData.personal_info.email, applicationData.personal_info.name);
         
         return res.status(201).json({
           message: 'Application submitted successfully',
-          sheetUrl: sheetResult.publicUrl,
-          emailScheduled: scheduleResult.scheduledTime
+          sheetUrl: sheetResult.publicUrl
         });
       } catch (error) {
         console.error('Error processing application:', error);
