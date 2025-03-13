@@ -57,22 +57,23 @@ exports.scheduleFollowUpEmail = async (email, name) => {
     
     const timezone = 'Asia/Colombo';
     
-    const thirtyMinutesFromNow = new Date();
-    thirtyMinutesFromNow.setMinutes(thirtyMinutesFromNow.getMinutes() + 30);
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(10, 0, 0, 0);
     
     const rule = new schedule.RecurrenceRule();
-    rule.year = thirtyMinutesFromNow.getFullYear();
-    rule.month = thirtyMinutesFromNow.getMonth();
-    rule.date = thirtyMinutesFromNow.getDate();
-    rule.hour = thirtyMinutesFromNow.getHours();
-    rule.minute = thirtyMinutesFromNow.getMinutes();
+    rule.year = tomorrow.getFullYear();
+    rule.month = tomorrow.getMonth();
+    rule.date = tomorrow.getDate();
+    rule.hour = 10;
+    rule.minute = 0;
     rule.tz = timezone;
     
     const job = schedule.scheduleJob(rule, async () => {
       await exports.sendFollowUpEmail(email, name);
     });
     
-    const scheduledTime = new Intl.DateTimeFormat('en-US', {
+    const sriLankaTime = new Intl.DateTimeFormat('en-US', {
       timeZone: timezone,
       year: 'numeric',
       month: 'long',
@@ -80,9 +81,9 @@ exports.scheduleFollowUpEmail = async (email, name) => {
       hour: '2-digit',
       minute: '2-digit',
       timeZoneName: 'short'
-    }).format(thirtyMinutesFromNow);
+    }).format(tomorrow);
     
-    console.log(`Follow-up email scheduled for 30 minutes from now: ${scheduledTime}`);
+    console.log(`Follow-up email scheduled for tomorrow at 10 AM Sri Lanka time: ${sriLankaTime}`);
     console.log(`Job scheduled for: ${email}`);
     
     global.scheduledJobs = global.scheduledJobs || {};
