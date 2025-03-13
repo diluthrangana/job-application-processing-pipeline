@@ -30,7 +30,6 @@ exports.sendFollowUpEmail = async (to, name, immediate = false) => {
           <p>Thank you for applying to our position. We wanted to let you know that your CV is currently under review by our team.</p>
           <p>We appreciate your interest in our company and will get back to you regarding the next steps in the application process.</p>
           <p>If you have any questions in the meantime, please don't hesitate to contact us.</p>
-          <p><strong>Note:</strong> This email is being sent after 30 minutes of your submission because limitations with my deployment, as I am currently using a free-tier hosting service that clears data after a short period of time.</p>
           <p>Best regards,<br>Recruitment Team</p>
         </div>
       `
@@ -98,41 +97,47 @@ exports.scheduleFollowUpEmail = async (email, name) => {
 
 exports.testEmail = async (email, name) => {
   try {
-    console.log(`Scheduling email to ${email} to be sent in 30 minutes`);
+    console.log(`Scheduling test email to ${email} to be sent in 30 minutes (Sri Lanka time)`);
     
     const timezone = 'Asia/Colombo';
     
     const thirtyMinutesFromNow = new Date();
     thirtyMinutesFromNow.setMinutes(thirtyMinutesFromNow.getMinutes() + 30);
     
-    const job = schedule.scheduleJob(thirtyMinutesFromNow, async () => {
+    const rule = new schedule.RecurrenceRule();
+    rule.year = thirtyMinutesFromNow.getFullYear();
+    rule.month = thirtyMinutesFromNow.getMonth();
+    rule.date = thirtyMinutesFromNow.getDate();
+    rule.hour = thirtyMinutesFromNow.getHours();
+    rule.minute = thirtyMinutesFromNow.getMinutes();
+    rule.tz = timezone;
+    
+    const job = schedule.scheduleJob(rule, async () => {
       await exports.sendFollowUpEmail(email, name);
-      console.log(`Follow-up email sent to ${email} after 30 minute delay`);
     });
     
     const scheduledTime = new Intl.DateTimeFormat('en-US', {
       timeZone: timezone,
       year: 'numeric',
-      month: 'long', 
+      month: 'long',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
       timeZoneName: 'short'
     }).format(thirtyMinutesFromNow);
     
-    console.log(`Email scheduled for: ${scheduledTime}`);
-    console.log(`Job scheduled for: ${email}`);
+    console.log(`Test email scheduled for: ${scheduledTime}`);
+    console.log(`Test job scheduled for: ${email}`);
     
     global.scheduledJobs = global.scheduledJobs || {};
-    global.scheduledJobs[email] = job;
+    global.scheduledJobs[`test_${email}`] = job;
     
-    return {
-      success: true,
-      message: `Email will be sent to ${email} at ${scheduledTime}`,
-      scheduledTime: thirtyMinutesFromNow
-    };
+    console.log("Sending immediate confirmation email...");
+    await exports.sendFollowUpEmail(email, name, true);
+    
+    return true;
   } catch (error) {
-    console.error('Error scheduling delayed email:', error);
+    console.error('Test email scheduling failed:', error);
     throw error;
   }
 };
