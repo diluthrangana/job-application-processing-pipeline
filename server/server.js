@@ -1,4 +1,5 @@
 require('dotenv').config();
+require('./utils/emailScheduler').setupQueue();
 const express = require('express');
 const cors = require('cors');
 const applicationRoutes = require('./routes/applications');
