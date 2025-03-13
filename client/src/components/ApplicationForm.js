@@ -120,7 +120,7 @@ const ApplicationForm = () => {
             ⚠️ Note: This form is hosted on a free server. Submission may take time while the server wakes from sleep mode. 
             If the submission fails, click  
             <a 
-              href="https://job-application-processing-pipeline-3.onrender.com/" 
+              href="https://job-application-processing-pipeline-2.onrender.com/" 
               target="_blank" 
               rel="noopener noreferrer"
               style={{ textDecoration: 'none', fontWeight: 'bold', color: '#00afee' }}
